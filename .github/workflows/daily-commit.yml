@@ -1,0 +1,71 @@
+name: Daily commit
+
+on:
+  schedule:
+    # Todos los días a las 12:00 UTC.
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-commit
+  cancel-in-progress: false
+
+jobs:
+  update-heartbeat:
+    runs-on: ubuntu-latest
+    env:
+      MAX_STREAK_DAYS: 67
+      PAUSE_DAYS: 2
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Comprobar ciclo de racha
+        id: cycle
+        shell: bash
+        run: |
+          mapfile -t dates < <(git log --format=%cs --grep='^chore: daily heartbeat$' | sort -ru)
+          today="$(date -u +%F)"
+
+          if [ "${#dates[@]}" -eq 0 ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          last_date="${dates[0]}"
+          days_since_last=$(( ( $(date -u -d "$today" +%s) - $(date -u -d "$last_date" +%s) ) / 86400 ))
+          streak=0
+          expected_date="$last_date"
+
+          for commit_date in "${dates[@]}"; do
+            [ "$commit_date" = "$expected_date" ] || break
+            streak=$((streak + 1))
+            expected_date="$(date -u -d "$expected_date - 1 day" +%F)"
+          done
+
+          if [ "$streak" -ge "$MAX_STREAK_DAYS" ] && [ "$days_since_last" -ge 1 ] && [ "$days_since_last" -le "$PAUSE_DAYS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Racha de $streak días completada; pausa de $PAUSE_DAYS días."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Actualizar registro
+        if: steps.cycle.outputs.skip != 'true'
+        run: |
+          printf '# Registro diario\n\nEste archivo es actualizado automáticamente por GitHub Actions.\n\nÚltima actualización: %s UTC.\n' "$(date -u '+%Y-%m-%d %H:%M:%S')" > heartbeat.md
+
+      - name: Crear y enviar commit
+        if: steps.cycle.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add heartbeat.md
+          git diff --cached --quiet || git commit -m "chore: daily heartbeat"
+          git push
