@@ -67,8 +67,8 @@ jobs:
       - name: Crear y enviar commit
         if: steps.cycle.outputs.skip != 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "Guillermo"
+          git config user.email "196164803+Guillermelo@users.noreply.github.com"
           git add heartbeat.md
           git diff --cached --quiet || git commit -m "chore: daily heartbeat"
           git push
