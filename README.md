@@ -14,6 +14,6 @@ Mantiene un registro diario mediante GitHub Actions.
 2. En GitHub, abrí **Settings → Actions → General → Workflow permissions** y elegí **Read and write permissions**.
 3. En la pestaña **Actions**, habilitá el workflow si GitHub lo muestra desactivado.
 
-El workflow `.github/workflows/daily-commit.yml` se ejecuta todos los días a las **12:00 UTC**, actualiza `heartbeat.md` y hace push con el `GITHUB_TOKEN` incorporado. Crea un commit diario sin pausas programadas. También se puede ejecutar manualmente desde la pestaña **Actions**.
+El workflow `.github/workflows/daily-commit.yml` se ejecuta todos los días a las **12:00 UTC**, actualiza `heartbeat.md` y hace push con el `GITHUB_TOKEN` incorporado. Trabaja en ciclos: crea **un commit por día durante 67 días consecutivos**, pausa los **2 días siguientes** y vuelve a comenzar. También se puede ejecutar manualmente desde la pestaña **Actions**.
 
 > Los trabajos programados de GitHub pueden demorarse. Los commits deben estar en la rama predeterminada para contar en el gráfico de contribuciones; si el repositorio es privado, activá la opción de mostrar contribuciones privadas en tu perfil.
